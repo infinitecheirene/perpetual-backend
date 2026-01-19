@@ -1,28 +1,27 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\BarangayClearanceController;
-use App\Http\Controllers\Api\BusinessPermitController;
-use App\Http\Controllers\Api\BuildingPermitController;
-use App\Http\Controllers\Api\CedulaController;
-use App\Http\Controllers\Api\ReportController;
-use App\Http\Controllers\Api\MedicalAssistanceController;
-use App\Http\Controllers\Api\HealthCertificateController;
-use App\Http\Controllers\Api\NewsController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\AmbulanceRequestController;
 use App\Http\Controllers\Api\AnnouncementController;
-use App\Http\Controllers\Api\SubscriberController;
-use App\Http\Controllers\Api\IndigencyCertificateController;
-use App\Http\Controllers\Api\ResidencyCertificateController;
-use App\Http\Controllers\Api\AdminResidencyCertificateController;
-use App\Http\Controllers\Api\AdminGoodMoralCertificateController;
-use App\Http\Controllers\Api\GoodMoralCertificateController;
+use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BarangayBlotterController;
-
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\BarangayClearanceController;
+use App\Http\Controllers\Api\BuildingPermitController;
+use App\Http\Controllers\Api\BusinessPartnerController;
+use App\Http\Controllers\Api\BusinessPermitController;
+use App\Http\Controllers\Api\CedulaController;
+use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\GoodMoralCertificateController;
+use App\Http\Controllers\Api\HealthCertificateController;
+use App\Http\Controllers\Api\IndigencyCertificateController;
+use App\Http\Controllers\Api\LegitimacyController;
+use App\Http\Controllers\Api\MedicalAssistanceController;
+use App\Http\Controllers\Api\NewsController;
+use App\Http\Controllers\Api\ReportController;
+use App\Http\Controllers\Api\ResidencyCertificateController;
+use App\Http\Controllers\Api\SubscriberController;
+use App\Http\Controllers\Api\UserController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 // Public routes - NO /api prefix needed (Laravel adds it automatically)
 Route::post('auth/register', [AuthController::class, 'register']);
@@ -241,4 +240,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Admin only routes
     Route::get('/admin/barangay-blotters', [BarangayBlotterController::class, 'adminIndex']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // Users legitimacy request routes
+    Route::get('legitimacy', [LegitimacyController::class, 'index']);
+    Route::post('legitimacy', [LegitimacyController::class, 'store']);
+
+    // Admin legitimacy request routes
+    Route::get('admin/legitimacy', [LegitimacyController::class, 'adminIndex']);
+    Route::post('admin/legitimacy', [LegitimacyController::class, 'adminStore']);
+    Route::put('admin/legitimacy/{id}', [LegitimacyController::class, 'adminUpdate']);
+});
+
+Route::middleware('auth:sanctum')->group(function () {
+    // User routes for business partners
+    Route::get('business-partners', [BusinessPartnerController::class, 'index']); // user: list theirs
+    Route::post('business-partners', [BusinessPartnerController::class, 'store']); // user: store
+
+    // Admin routes for business partners
+    Route::get('admin/business-partners', [BusinessPartnerController::class, 'adminIndex']); // admin list all
+    Route::put('admin/business-partners/{id}', [BusinessPartnerController::class, 'adminUpdate']); // admin update
 });

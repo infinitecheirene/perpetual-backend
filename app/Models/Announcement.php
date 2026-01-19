@@ -18,14 +18,12 @@ class Announcement extends Model
         'content',
         'is_active',
         'priority',
-        'image_url',
     ];
 
     protected $casts = [
         'date' => 'date',
         'is_active' => 'boolean',
         'priority' => 'integer',
-        'date' => 'date',
     ];
 
     // Scopes
@@ -42,7 +40,7 @@ class Announcement extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('priority', 'desc')
-            ->orderBy('date', 'desc')
-            ->orderBy('created_at', 'desc');
+                     ->orderBy('date', 'desc')
+                     ->orderBy('created_at', 'desc');
     }
 }

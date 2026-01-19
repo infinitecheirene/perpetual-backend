@@ -30,7 +30,7 @@ return new class extends Migration
 
             // Status & Role
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->enum('role', ['user', 'admin'])->default('user');
+            $table->enum('role', ['member', 'admin'])->default('member');
 
             $table->rememberToken();
             $table->timestamps();
