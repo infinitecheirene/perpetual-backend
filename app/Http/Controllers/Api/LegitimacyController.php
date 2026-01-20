@@ -14,7 +14,7 @@ class LegitimacyController extends Controller
     /**
      * List legitimacy requests for the authenticated user
      */
-    public function index(Request $request)
+    public function userIndex(Request $request)
     {
         $user = Auth::user();
 
@@ -46,7 +46,7 @@ class LegitimacyController extends Controller
     /**
      * Submit a legitimacy request (only users)
      */
-    public function store(Request $request)
+    public function userStore(Request $request)
     {
         $user = Auth::user();
 
@@ -55,6 +55,18 @@ class LegitimacyController extends Controller
                 'success' => false,
                 'message' => 'Only users can submit legitimacy requests.',
             ], 403);
+        }
+
+        // Prevent multiple pending requests
+        $existing = LegitimacyRequest::where('user_id', $user->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have a pending legitimacy request.',
+            ], 400);
         }
 
         $validator = Validator::make($request->all(), [
@@ -87,7 +99,6 @@ class LegitimacyController extends Controller
                 'message' => 'Legitimacy request submitted successfully.',
                 'data' => $legitimacy,
             ], 201);
-
         } catch (\Exception $e) {
             Log::error('Legitimacy submission failed', [
                 'user_id' => $user->id,
@@ -101,6 +112,64 @@ class LegitimacyController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Update own legitimacy request
+     */
+    public function userUpdate(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (! $user->isMember()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only users can update legitimacy requests.',
+            ], 403);
+        }
+
+        $legitimacy = LegitimacyRequest::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $legitimacy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Legitimacy request not found or unauthorized.',
+            ], 404);
+        }
+
+        // only pending can be edited
+        if ($legitimacy->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending legitimacy requests can be edited.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'alias' => 'sometimes|string|max:255',
+            'chapter' => 'sometimes|string|max:255',
+            'position' => 'sometimes|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $legitimacy->update($request->only(['alias', 'chapter', 'position']));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Legitimacy request updated successfully.',
+            'data' => $legitimacy,
+        ]);
+    }
+
+    
 
     /**
      * Admin: list all legitimacy requests (with search/filter)
@@ -117,8 +186,8 @@ class LegitimacyController extends Controller
         }
 
         $query = LegitimacyRequest::with([
-            'user:id,name,email',   
-            'signatories',          
+            'user:id,name,email',
+            'signatories',
         ]);
 
         // Filter by status
@@ -213,7 +282,7 @@ class LegitimacyController extends Controller
                     $signatureUrl = null;
                     if (isset($sig['signature_file'])) {
                         $file = $sig['signature_file'];
-                        $fileName = time().'_'.$file->getClientOriginalName();
+                        $fileName = time() . '_' . $file->getClientOriginalName();
                         $file->move(public_path('signatureUrl'), $fileName);
                         $signatureUrl = "/signatureUrl/$fileName";
                     }
@@ -232,7 +301,6 @@ class LegitimacyController extends Controller
                 'message' => 'Legitimacy request created successfully by admin.',
                 'data' => $legitimacy->load('signatories'),
             ], 201);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -307,7 +375,7 @@ class LegitimacyController extends Controller
                 $signatureUrl = null;
                 if (isset($sig['signature_file'])) {
                     $file = $sig['signature_file'];
-                    $fileName = time().'_'.$file->getClientOriginalName();
+                    $fileName = time() . '_' . $file->getClientOriginalName();
                     $file->move(public_path('signatureUrl'), $fileName);
                     $signatureUrl = "/signatureUrl/$fileName";
                 }
@@ -381,7 +449,6 @@ class LegitimacyController extends Controller
                 'success' => true,
                 'message' => 'Legitimacy request and its signatory files deleted successfully.',
             ], 200);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

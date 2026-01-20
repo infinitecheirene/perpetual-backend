@@ -111,7 +111,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/admin/building-permits', [BuildingPermitController::class, 'adminIndex']);
     Route::get('/admin/cedulas', [CedulaController::class, 'adminIndex']);
     Route::get('/admin/health-certificates', [HealthCertificateController::class, 'adminIndex']);
-
 });
 
 Route::middleware('auth:sanctum')->group(function () {
@@ -134,7 +133,6 @@ Route::middleware('auth:sanctum')->prefix('health-certificate')->group(function 
     Route::get('/{id}', [HealthCertificateController::class, 'show']);
     Route::put('/{id}', [HealthCertificateController::class, 'update']);
     Route::delete('/{id}', [HealthCertificateController::class, 'destroy']);
-
 });
 
 Route::prefix('news')->group(function () {
@@ -176,7 +174,6 @@ Route::prefix('subscribers')->group(function () {
 
     // For Next.js to fetch subscribers for email sending
     Route::get('active', [SubscriberController::class, 'getActiveSubscribers']);
-
 });
 
 // Admin subscriber routes (protected)
@@ -244,8 +241,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     // member legitimacy request routes
-    Route::get('legitimacy', [LegitimacyController::class, 'index']);
-    Route::post('legitimacy', [LegitimacyController::class, 'store']);
+    Route::get('legitimacy', [LegitimacyController::class, 'userIndex']);
+    Route::post('legitimacy', [LegitimacyController::class, 'userStore']);
+    Route::put('legitimacy/{id}', [LegitimacyController::class, 'userUpdate']);
 
     // Admin legitimacy request routes
     Route::get('admin/legitimacy', [LegitimacyController::class, 'adminIndex']);
@@ -261,6 +259,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Member routes for business partners
     Route::get('user/business-partners', [BusinessPartnerController::class, 'userIndex']);
     Route::post('business-partners', [BusinessPartnerController::class, 'store']);
+    Route::put('business-partners/{id}', [BusinessPartnerController::class, 'userUpdate']);
+    Route::delete('business-partners/{id}', [BusinessPartnerController::class, 'userDestroy']);
 
     // Admin routes for business partners
     Route::get('admin/business-partners', [BusinessPartnerController::class, 'adminIndex']);

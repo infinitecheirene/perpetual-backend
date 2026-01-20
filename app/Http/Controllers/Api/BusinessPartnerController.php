@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 
 class BusinessPartnerController extends Controller
 {
+    // Public: only approved businesses     
     public function index(Request $request)
     {
         $query = BusinessPartner::query();
@@ -95,7 +96,7 @@ class BusinessPartnerController extends Controller
             // Handle file upload to public folder
             if ($request->hasFile('photo')) {
                 $file = $request->file('photo');
-                $filename = time().'_'.$file->getClientOriginalName();
+                $filename = time() . '_' . $file->getClientOriginalName();
                 $destination = public_path('business_photos');
 
                 // Create folder if it doesn't exist
@@ -124,7 +125,6 @@ class BusinessPartnerController extends Controller
                 'message' => 'Business created.',
                 'data' => $business,
             ], 201);
-
         } catch (\Exception $e) {
             Log::error('Business creation failed', [
                 'user_id' => $user->id,
@@ -139,6 +139,162 @@ class BusinessPartnerController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * User: update own business (PENDING only)
+     */
+    public function userUpdate(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+
+            if (!$user->isMember()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only users can update businesses.',
+                ], 403);
+            }
+
+            $business = BusinessPartner::where('id', $id)
+                ->where('user_id', $user->id)
+                ->first();
+
+            if (!$business) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Business not found or unauthorized.',
+                ], 404);
+            }
+
+            if ($business->status !== 'pending') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only pending businesses can be edited.',
+                ], 403);
+            }
+
+            // Merge PUT data and files
+            $input = array_merge($request->all(), $request->allFiles());
+
+            $validator = Validator::make($input, [
+                'business_name' => 'sometimes|string|max:255',
+                'website_link' => 'nullable|url|max:255',
+                'photo' => 'nullable|image|max:5120', // 5MB
+                'description' => 'nullable|string',
+                'category' => 'sometimes|string|max:100',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // Handle photo upload
+            if ($request->hasFile('photo')) {
+                if ($business->photo && file_exists(public_path($business->photo))) {
+                    unlink(public_path($business->photo));
+                }
+
+                $file = $request->file('photo');
+                $filename = time() . '_' . $file->getClientOriginalName();
+                $destination = public_path('business_photos');
+
+                if (!file_exists($destination)) {
+                    mkdir($destination, 0777, true);
+                }
+
+                $file->move($destination, $filename);
+                $business->photo = "/business_photos/$filename";
+            } elseif ($request->has('photo') && $request->photo === '') {
+                if ($business->photo && file_exists(public_path($business->photo))) {
+                    unlink(public_path($business->photo));
+                }
+                $business->photo = null;
+            }
+
+            // Fill other fields safely
+            $fillable = ['business_name', 'website_link', 'description', 'category'];
+            foreach ($fillable as $field) {
+                if ($request->has($field)) {
+                    $business->$field = $request->$field;
+                }
+            }
+
+            $business->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Business updated successfully.',
+                'data' => $business,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('PUT update failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+                'files' => $request->allFiles(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal server error',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+
+
+    /**
+     * User: delete own business 
+     */
+    public function userDestroy($id)
+    {
+        $user = Auth::user();
+
+        if (! $user->isMember()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only users can delete businesses.',
+            ], 403);
+        }
+
+        $business = BusinessPartner::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $business) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Business not found or unauthorized.',
+            ], 404);
+        }
+
+        try {
+            // Delete photo if exists
+            if ($business->photo && file_exists(public_path($business->photo))) {
+                unlink(public_path($business->photo));
+            }
+
+            $business->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Business deleted successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete business.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
 
     /**
      * Admin: list all businesses
@@ -203,7 +359,7 @@ class BusinessPartnerController extends Controller
         // Handle photo upload to public folder
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
-            $filename = time().'_'.$file->getClientOriginalName();
+            $filename = time() . '_' . $file->getClientOriginalName();
             $destination = public_path('business_photos');
 
             if (! file_exists($destination)) {
@@ -218,7 +374,12 @@ class BusinessPartnerController extends Controller
 
         // Fill other fields
         $business->fill($request->only([
-            'business_name', 'website_link', 'description', 'category', 'status', 'admin_note',
+            'business_name',
+            'website_link',
+            'description',
+            'category',
+            'status',
+            'admin_note',
         ]));
 
         $business->save();
