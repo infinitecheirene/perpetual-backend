@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\ResidencyCertificateController;
 use App\Http\Controllers\Api\SubscriberController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\VlogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -44,7 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 // ===================================
 // APPLICATION ROUTES (All Protected)
-
 
 // Members routes - user's own ambulance requests
 Route::middleware('auth:sanctum')->group(function () {
@@ -243,7 +243,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    // Users legitimacy request routes
+    // member legitimacy request routes
     Route::get('legitimacy', [LegitimacyController::class, 'index']);
     Route::post('legitimacy', [LegitimacyController::class, 'store']);
 
@@ -254,11 +254,22 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
-    // User routes for business partners
-    Route::get('business-partners', [BusinessPartnerController::class, 'index']); // user: list theirs
-    Route::post('business-partners', [BusinessPartnerController::class, 'store']); // user: store
+    // Member routes for business partners
+    Route::get('business-partners', [BusinessPartnerController::class, 'index']);
+    Route::post('business-partners', [BusinessPartnerController::class, 'store']);
 
     // Admin routes for business partners
-    Route::get('admin/business-partners', [BusinessPartnerController::class, 'adminIndex']); // admin list all
-    Route::put('admin/business-partners/{id}', [BusinessPartnerController::class, 'adminUpdate']); // admin update
+    Route::get('admin/business-partners', [BusinessPartnerController::class, 'adminIndex']);
+    Route::put('admin/business-partners/{id}', [BusinessPartnerController::class, 'adminUpdate']);
+});
+
+Route::middleware(['auth:sanctum'])->group(function () {
+    // public
+    Route::get('vlogs', [VlogController::class, 'index']);
+
+    // admin
+    Route::get('admin/vlogs', [VlogController::class, 'adminIndex']);
+    Route::post('admin/vlogs', [VlogController::class, 'store']);
+    Route::patch('admin/vlogs/{id}', [VlogController::class, 'update']);
+    Route::delete('admin/vlogs/{id}', [VlogController::class, 'destroy']);
 });
