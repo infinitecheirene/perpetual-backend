@@ -21,7 +21,6 @@ return new class extends Migration
             $table->string('phone_number')->nullable();
 
             // School / Organization Info
-            $table->string('school_registration_number')->nullable();
             $table->string('fraternity_number')->nullable();
 
             // Authentication
@@ -29,7 +28,7 @@ return new class extends Migration
             $table->string('password');
 
             // Status & Role
-            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
+            $table->enum('status', ['pending', 'approved', 'rejected', 'deactivated'])->default('pending');
             $table->enum('role', ['member', 'admin'])->default('member');
 
             $table->rememberToken();

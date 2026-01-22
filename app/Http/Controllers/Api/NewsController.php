@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class NewsController extends Controller
 {
@@ -52,6 +53,7 @@ class NewsController extends Controller
                 'data' => $news,
             ]);
         } catch (\Exception $e) {
+            Log::error('News index error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch news',
@@ -66,6 +68,22 @@ class NewsController extends Controller
     public function store(Request $request)
     {
         try {
+            Log::info('=== NEWS STORE REQUEST START ===');
+            Log::info('Request method: ' . $request->method());
+            Log::info('Content-Type: ' . $request->header('Content-Type'));
+            Log::info('All request data:', $request->all());
+            Log::info('Has image file: ' . ($request->hasFile('image') ? 'YES' : 'NO'));
+            
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                Log::info('Image file details:', [
+                    'name' => $file->getClientOriginalName(),
+                    'size' => $file->getSize(),
+                    'mime' => $file->getMimeType(),
+                    'valid' => $file->isValid()
+                ]);
+            }
+
             $validator = Validator::make($request->all(), [
                 'title' => 'required|string|max:255',
                 'content' => 'required|string',
@@ -76,6 +94,7 @@ class NewsController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::error('Validation failed:', $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -89,6 +108,9 @@ class NewsController extends Controller
             // Handle image upload
             if ($request->hasFile('image')) {
                 $image = $request->file('image');
+                
+                Log::info('Processing image upload');
+                
                 $imageName = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
                 
                 // Move to public/images/news directory
@@ -97,10 +119,19 @@ class NewsController extends Controller
                 // Create directory if it doesn't exist
                 if (!file_exists($destinationPath)) {
                     mkdir($destinationPath, 0755, true);
+                    Log::info('Created directory: ' . $destinationPath);
                 }
                 
                 $image->move($destinationPath, $imageName);
-                $data['image'] = 'images/news/' . $imageName;
+                
+                // CRITICAL FIX: Use image_url to match database column
+                $data['image_url'] = 'images/news/' . $imageName;
+                
+                Log::info('Image saved successfully:', [
+                    'filename' => $imageName,
+                    'path' => $data['image_url'],
+                    'full_path' => $destinationPath . '/' . $imageName
+                ]);
             }
 
             // Set published_at if status is published
@@ -108,8 +139,13 @@ class NewsController extends Controller
                 $data['published_at'] = now();
             }
 
+            Log::info('Creating news with data:', $data);
+
             $news = News::create($data);
             $news->load('author:id,name,email');
+
+            Log::info('News created successfully with ID: ' . $news->id);
+            Log::info('=== NEWS STORE REQUEST END ===');
 
             return response()->json([
                 'success' => true,
@@ -117,10 +153,16 @@ class NewsController extends Controller
                 'data' => $news,
             ], 201);
         } catch (\Exception $e) {
+            Log::error('=== NEWS STORE ERROR ===');
+            Log::error('Error message: ' . $e->getMessage());
+            Log::error('Error file: ' . $e->getFile() . ':' . $e->getLine());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create news',
                 'error' => $e->getMessage(),
+                'line' => $e->getLine(),
             ], 500);
         }
     }
@@ -151,7 +193,21 @@ class NewsController extends Controller
     public function update(Request $request, $id)
     {
         try {
+            Log::info('=== NEWS UPDATE REQUEST START ===');
+            Log::info('News ID: ' . $id);
+            Log::info('Request method: ' . $request->method());
+            Log::info('Content-Type: ' . $request->header('Content-Type'));
+            Log::info('_method parameter: ' . $request->input('_method'));
+            Log::info('All request data:', $request->except('image'));
+            Log::info('Has image file: ' . ($request->hasFile('image') ? 'YES' : 'NO'));
+
             $news = News::findOrFail($id);
+            
+            Log::info('Found news:', [
+                'id' => $news->id,
+                'title' => $news->title,
+                'current_image_url' => $news->image_url
+            ]);
 
             $validator = Validator::make($request->all(), [
                 'title' => 'sometimes|required|string|max:255',
@@ -163,6 +219,7 @@ class NewsController extends Controller
             ]);
 
             if ($validator->fails()) {
+                Log::error('Validation failed:', $validator->errors()->toArray());
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -171,12 +228,25 @@ class NewsController extends Controller
             }
 
             $data = $validator->validated();
+            
+            Log::info('Validated data:', $data);
 
             // Handle image upload
             if ($request->hasFile('image')) {
-                // Delete old image
-                if ($news->image && file_exists(public_path($news->image))) {
-                    unlink(public_path($news->image));
+                Log::info('Processing new image upload');
+                
+                // Delete old image - CRITICAL FIX: Use image_url column
+                if ($news->image_url && file_exists(public_path($news->image_url))) {
+                    $deleted = unlink(public_path($news->image_url));
+                    Log::info('Old image deletion:', [
+                        'path' => $news->image_url,
+                        'deleted' => $deleted ? 'SUCCESS' : 'FAILED'
+                    ]);
+                } else {
+                    Log::info('No old image to delete or file not found:', [
+                        'image_url' => $news->image_url,
+                        'path_exists' => $news->image_url ? file_exists(public_path($news->image_url)) : false
+                    ]);
                 }
 
                 $image = $request->file('image');
@@ -188,19 +258,37 @@ class NewsController extends Controller
                 // Create directory if it doesn't exist
                 if (!file_exists($destinationPath)) {
                     mkdir($destinationPath, 0755, true);
+                    Log::info('Created directory: ' . $destinationPath);
                 }
                 
                 $image->move($destinationPath, $imageName);
-                $data['image'] = 'images/news/' . $imageName;
+                
+                // CRITICAL FIX: Use image_url to match database column
+                $data['image_url'] = 'images/news/' . $imageName;
+                
+                Log::info('New image saved:', [
+                    'filename' => $imageName,
+                    'path' => $data['image_url'],
+                    'full_path' => $destinationPath . '/' . $imageName
+                ]);
             }
 
             // Update published_at if changing to published status
             if (isset($data['status']) && $data['status'] === 'published' && !$news->published_at) {
                 $data['published_at'] = $data['published_at'] ?? now();
+                Log::info('Setting published_at: ' . $data['published_at']);
             }
+
+            Log::info('Updating news with data:', $data);
 
             $news->update($data);
             $news->load('author:id,name,email');
+
+            Log::info('News updated successfully:', [
+                'id' => $news->id,
+                'image_url' => $news->image_url
+            ]);
+            Log::info('=== NEWS UPDATE REQUEST END ===');
 
             return response()->json([
                 'success' => true,
@@ -208,10 +296,16 @@ class NewsController extends Controller
                 'data' => $news,
             ]);
         } catch (\Exception $e) {
+            Log::error('=== NEWS UPDATE ERROR ===');
+            Log::error('Error message: ' . $e->getMessage());
+            Log::error('Error file: ' . $e->getFile() . ':' . $e->getLine());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update news',
                 'error' => $e->getMessage(),
+                'line' => $e->getLine(),
             ], 500);
         }
     }
@@ -222,20 +316,32 @@ class NewsController extends Controller
     public function destroy($id)
     {
         try {
+            Log::info('=== NEWS DELETE REQUEST ===');
+            Log::info('Deleting news ID: ' . $id);
+            
             $news = News::findOrFail($id);
 
-            // Delete image if exists
-            if ($news->image && file_exists(public_path($news->image))) {
-                unlink(public_path($news->image));
+            // Delete image if exists - CRITICAL FIX: Use image_url column
+            if ($news->image_url && file_exists(public_path($news->image_url))) {
+                $deleted = unlink(public_path($news->image_url));
+                Log::info('Image deletion:', [
+                    'path' => $news->image_url,
+                    'deleted' => $deleted ? 'SUCCESS' : 'FAILED'
+                ]);
             }
 
             $news->delete();
+
+            Log::info('News deleted successfully: ' . $id);
 
             return response()->json([
                 'success' => true,
                 'message' => 'News deleted successfully',
             ]);
         } catch (\Exception $e) {
+            Log::error('News delete error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete news',
