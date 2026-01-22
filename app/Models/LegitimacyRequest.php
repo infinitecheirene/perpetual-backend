@@ -10,15 +10,9 @@ class LegitimacyRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'alias',
-        'chapter',
-        'position',
-        'fraternity_number',
-        'status',
-        'admin_note',
-        'approved_at',
-        'certificate_date',
+        'user_id', 'alias', 'chapter', 'position',
+        'fraternity_number', 'status', 'admin_note',
+        'approved_at', 'certificate_date',
     ];
 
     // Optional: cast approved_at to datetime

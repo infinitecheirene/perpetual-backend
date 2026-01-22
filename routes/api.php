@@ -127,7 +127,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 });
 
 
-// Public news routes - No authentication required
+
 Route::prefix('news')->group(function () {
     Route::get('/published', [NewsController::class, 'published']);
     Route::get('/published/{id}', [NewsController::class, 'show']);
@@ -138,10 +138,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('admin')->group(function () {
         Route::prefix('news')->group(function () {
             Route::get('/', [NewsController::class, 'index']);
-            Route::post('/', [NewsController::class, 'store']); // Fixed typo - was '/  '
+            Route::post('/', [NewsController::class, 'store']);
             Route::get('/{id}', [NewsController::class, 'show']);
-            Route::post('/{id}', [NewsController::class, 'update']); // For file uploads
-            Route::put('/{id}', [NewsController::class, 'update']);  // Alternative
+            Route::post('/{id}', [NewsController::class, 'update']);
+            Route::put('/{id}', [NewsController::class, 'update']);
             Route::delete('/{id}', [NewsController::class, 'destroy']);
         });
     });

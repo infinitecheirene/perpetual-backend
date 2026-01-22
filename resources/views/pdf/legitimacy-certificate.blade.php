@@ -3,14 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-
-    {{-- title --}}
     <title>Certificate of Legitimacy - {{ $legitimacy->alias }}</title>
-
-    {{-- font style --}}
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-
     <style>
         * {
             margin: 0;
@@ -19,161 +12,149 @@
         }
 
         @page {
-            margin: 10mm;
+            margin: 20mm;
         }
 
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
             color: #000;
-            margin: 0;
-            padding: 0;
+            position: relative;
+            height: 100%;
         }
 
-        /* Waltermark */
-        .watermark-logo .left,
-        .watermark-logo .right {
-            display: table-cell;
-            width: 50%;
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        /* Certificate Container */
-        .certificate-container {
-            border: 10px double #800000;
-            padding: 10px;
-            margin: 15px 20px;
-            /* height: 100%; */
-            /* position: relative; */
-        }
-
-        /* Border */
-        .inner-border {
-            border: 3px solid #d4af37;
-            padding: 30px 40px;
-            /* height: 100%; */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-
-        /* Watermark Background - ENLARGED */
+        /* Watermark Background */
         .watermark {
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 80%;
-            height: 60%;
+            opacity: 0.05;
             z-index: -1;
-            opacity: 0.08;
-
-            display: table;
-            /* DomPDF-safe horizontal layout */
+            width: 500px;
+            height: 500px;
         }
 
-        .watermark-logo {
-            display: table-cell;
-            width: 100%;
+        /* Certificate Container */
+        .certificate-container {
+            border: 10px double #800000;
+            padding: 20px;
             height: 100%;
-            vertical-align: middle;
-            text-align: center;
+            position: relative;
         }
 
-        .watermark-logo img {
-            width: 100%;
-            height: auto;
-            object-fit: contain;
-        }
-
-        /* Border */
         .inner-border {
-            display: block;
             border: 3px solid #d4af37;
-            /* height: 100%; */
-            /* display: flex; */
-            /* flex-direction: column; */
-            justify-content: flex-start;
-            /* override space-between */
+            padding: 30px 40px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
 
+        /* Status Badge */
+        .status-badge {
+            position: absolute;
+            top: 35px;
+            right: 50px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .status-approved {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 2px solid #059669;
+        }
+
+        .status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 2px solid #d97706;
+        }
+
+        .status-rejected {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 2px solid #dc2626;
+        }
 
         /* Header with Dual Logos */
         .header-section {
             text-align: center;
-            padding-bottom: 5px;
+            margin-bottom: 20px;
+            border-bottom: 4px solid #1a5490;
+            padding-bottom: 15px;
         }
 
         .header-content {
             display: table;
             width: 100%;
+            margin-bottom: 10px;
         }
 
         .logo-left,
         .logo-right {
             display: table-cell;
-            width: 25%;
+            width: 40%;
             vertical-align: middle;
             text-align: center;
         }
 
         .header-text {
             display: table-cell;
-            width: 50%;
+            width: 60%;
             vertical-align: middle;
             text-align: center;
         }
 
         .logo {
-            width: 180px;
-            height: 180px;
-            border-radius: 100%;
+            width: 120px;
+            height: 120px;
         }
 
         .logo-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
+            border: 2px solid #1a5490;
             display: inline-block;
             border-radius: 50%;
         }
 
         .organization-name {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #800000;
             text-transform: uppercase;
-            font-family: cursive;
             letter-spacing: 2px;
             margin-bottom: 5px;
         }
 
         .organization-subtitle {
-            font-size: 20px;
-            color: #800000;
-            text-transform: uppercase;
+            font-size: 11px;
+            color: #666;
             margin: 2px 0;
         }
 
         /* Certificate Title */
         .certificate-title {
             text-align: center;
-            margin: 20px 0 15px 0;
+            margin: 25px 0 20px 0;
         }
 
         .certificate-title h1 {
-            font-size: 44px;
+            font-size: 32px;
             font-weight: bold;
             color: #800000;
             text-transform: uppercase;
             letter-spacing: 4px;
             margin-bottom: 8px;
-            font-family: cursive;
-            text-align: center;
         }
 
         .certificate-subtitle {
-            font-size: 12px;
+            font-size: 13px;
             color: #333;
             font-style: italic;
             margin-bottom: 5px;
@@ -185,32 +166,34 @@
             flex-grow: 1;
         }
 
+        .certify-intro {
+            font-size: 12px;
+            margin-bottom: 15px;
+            color: #333;
+        }
 
         .recipient-name {
-            font-family: 'Great Vibes', cursive;
-            font-size: 36px;
-            text-decoration: underline;
-            text-align: center;
-
-
-            color: #000000;
+            font-size: 26px;
+            font-weight: bold;
+            color: #800000;
             margin: 15px 0;
             text-transform: uppercase;
+            border-bottom: 3px solid #d4af37;
             display: inline-block;
             padding-bottom: 5px;
         }
 
         .alias-display {
-            font-size: 13px;
+            font-size: 18px;
             font-style: italic;
-            color: #851003;
-            /* margin: 10px 0 2px 0; */
+            color: #1a5490;
+            margin: 10px 0 20px 0;
         }
 
         /* Details Table */
         .details-section {
-            /* margin: 20px auto; */
-            /* max-width: 500px; */
+            margin: 20px auto;
+            max-width: 500px;
         }
 
         .detail-row {
@@ -238,120 +221,56 @@
 
         /* Statement */
         .certificate-statement {
-            /* margin: 20px 50px; */
+            margin: 20px 50px;
             text-align: justify;
-            font-size: 10px;
+            font-size: 11px;
             line-height: 1.6;
             color: #333;
         }
 
-        /* === Signature Styling (Image-based style) === */
+        /* Signatories */
         .signatories-section {
-            position: relative;
+            margin-top: 30px;
+            display: table;
             width: 100%;
-            margin: 30px auto 10px auto;
-            display: table;
-            /* KEY */
-            table-layout: fixed;
-            text-align: center;
-            clear: both;
-            font-size: 8px;
-            width: 85%;
-        }
-
-        /* Clear floats properly so footer follows signatures */
-        .signatories-section::after {
-            content: "";
-            display: table;
-            clear: both;
-        }
-
-        .signatory-left,
-        .signatory-right {
-            width: 45%;
-        }
-
-        .signatory-cell {
-            display: table-cell;
-            width: 33.33%;
-            vertical-align: bottom;
-            text-align: center;
-        }
-
-        .signatory-left {
-            float: left;
-            width: 45%;
-            text-align: center;
-            padding-left: 0;
-            /* REMOVE OFFSET */
-        }
-
-        .signatory-right {
-            float: right;
-            width: 45%;
-            text-align: center;
-            padding-right: 0;
-            /* REMOVE OFFSET */
-        }
-
-        .signatory-bottom {
-            clear: both;
-            text-align: center;
-            /* margin-top: 30px; */
         }
 
         .signatory-box {
+            display: table-cell;
             text-align: center;
-            /* margin-bottom: 10px; */
+            padding: 0 15px;
+            vertical-align: top;
         }
 
         .signature-image {
-            display: block;
-            max-height: 85px;
-            max-width: 120px;
-            margin: 0 auto 6px auto;
+            max-height: 45px;
+            max-width: 150px;
+            margin: 5px 0;
         }
 
-        .signatory-name {
-            font-size: 8px;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin-top: 4px;
-            text-align: center;
+        .signature-placeholder {
+            height: 45px;
         }
 
         .signature-line {
-            border-top: 1px solid #000;
-            width: 120px;
-            margin: 4px auto;
+            border-top: 2px solid #000;
+            margin: 8px auto 5px auto;
+            width: 180px;
         }
 
-        .signatory-left .signature-line {
-            justify-content: center;
-            width: 40px;
-            margin-left: 0;
-        }
-
-        .signatory-right .signature-line {
-            margin-left: auto;
-            width: 40px;
-            margin: 2px 0 2px 0;
-            justify-content: center;
-        }
-
-        .signatory-bottom .signature-line {
-            margin-left: auto;
-            justify-content: center;
-            width: 40px;
-            margin-right: auto;
+        .signatory-name {
+            font-weight: bold;
+            font-size: 11px;
+            color: #000;
+            text-transform: uppercase;
         }
 
         .signatory-role {
-            font-size: 7px;
+            font-size: 9px;
+            color: #666;
             font-style: italic;
-            text-align: center;
+            margin-top: 2px;
         }
-
 
         .signatory-date {
             font-size: 9px;
@@ -362,17 +281,17 @@
         /* Footer */
         .certificate-footer {
             text-align: center;
-            font-size: 8px;
+            font-size: 9px;
             color: #666;
             border-top: 3px solid #800000;
             padding-top: 10px;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .certificate-number {
             font-weight: bold;
             color: #1a5490;
-            font-size: 9px;
+            font-size: 10px;
         }
 
         .footer-line {
@@ -383,21 +302,23 @@
 
 <body>
 
-    <div class="watermark">
-        <div class="watermark-logo left">
-            <img src="{{ public_path('images/perpetuallogo.jpg') }}" alt="Watermark">
+    <!-- Watermark -->
+    @if(file_exists(public_path('images/perpetuallogo.jpg')))
+        <div class="watermark">
+            <img src="{{ public_path('images/perpetuallogo.jpg') }}" alt="Watermark"
+                style="width: 100%; height: 100%; object-fit: contain;">
+
+                 <img src="{{ public_path('images/perpetuallogo.jpg') }}" alt="Watermark"
+                style="width: 100%; height: 100%; object-fit: contain;">
         </div>
-
-        <div class="watermark-logo right">
-            <img src="{{ public_path('images/perpetuallogo.jpg') }}" alt="Watermark">
-        </div>
-    </div>
-
-
-
+    @endif
 
     <div class="certificate-container">
         <div class="inner-border">
+            <!-- Status Badge -->
+            <div class="status-badge status-{{ $legitimacy->status }}">
+                {{ strtoupper($legitimacy->status) }}
+            </div>
 
             <!-- Header with Dual Logos -->
             <div class="header-section">
@@ -413,8 +334,8 @@
 
                     <!-- Center Text -->
                     <div class="header-text">
-                        <div class="organization-name">{{ strtoupper($legitimacy->alias) }}</div>
-                        <div class="organization-subtitle">{{ $legitimacy->chapter }}</div>
+                        <div class="organization-name">Triskelion Grand Fraternity</div>
+                        <div class="organization-subtitle">Grand Chapter 2 • Verum Chapter</div>
                     </div>
 
                     <!-- Right Logo -->
@@ -432,26 +353,22 @@
             <div class="content-section">
                 <!-- Title -->
                 <div class="certificate-title">
-                    <h1>Certificate of Appreciation</h1>
-                    <div class="certificate-subtitle">This certificate is presented to:</div>
+                    <h1>Certificate of Legitimacy</h1>
+                    <div class="certificate-subtitle">This is to certify that</div>
                 </div>
 
-
-                <div class="recipient-name">{{ strtolower($user->name) }}</div>
-                <div class="alias-display">
-                    Given this {{ \Carbon\Carbon::parse($certificateDate)->format('j') }} day of
-                    {{ \Carbon\Carbon::parse($certificateDate)->format('F') }},
-                    {{ \Carbon\Carbon::parse($certificateDate)->format('Y') }} at University of Perpetual Help.
-                    This certificate serves as official documentation of membership standing and affirms that the bearer
-                    has met all requirements and obligations as prescribed by the Triskelion Grand Fraternity. The
-                    holder of this certificate is recognized as a brother/sister in good standing and is entitled to all
-                    rights and privileges thereof.
+                <!-- Recipient Info -->
+                <div class="certify-intro">
+                    The individual named below is a legitimate and active member of<br>
+                    the Triskelion Grand Fraternity
                 </div>
 
+                <div class="recipient-name">{{ strtoupper($user->name) }}</div>
+                <div class="alias-display">"{{ $legitimacy->alias }}"</div>
 
                 <!-- Details -->
                 <div class="details-section">
-                    {{-- <div class="detail-row">
+                    <div class="detail-row">
                         <div class="detail-label">Chapter:</div>
                         <div class="detail-value">{{ $legitimacy->chapter }}</div>
                     </div>
@@ -466,82 +383,51 @@
                     <div class="detail-row">
                         <div class="detail-label">Certificate Date:</div>
                         <div class="detail-value">{{ $certificateDate }}</div>
-                    </div> --}}
+                    </div>
                 </div>
 
                 <!-- Statement -->
-                {{-- <div class="certificate-statement">
+                <div class="certificate-statement">
                     @if($legitimacy->admin_note)
-                    {{ $legitimacy->admin_note }}
+                        {{ $legitimacy->admin_note }}
                     @else
-                    This certificate serves as official documentation of membership standing and affirms that the bearer
-                    has met all requirements and obligations as prescribed by the Triskelion Grand Fraternity. The
-                    holder of this certificate is recognized as a brother/sister in good standing and is entitled to all
-                    rights and privileges thereof.
+                        This certificate serves as official documentation of membership standing and affirms that the bearer
+                        has met all requirements and obligations as prescribed by the Triskelion Grand Fraternity. The
+                        holder of this certificate is recognized as a brother/sister in good standing and is entitled to all
+                        rights and privileges thereof.
                     @endif
-                </div> --}}
+                </div>
 
-                <!-- Statement -->
-                {{-- <div class="certificate-statement">
-                    @if($legitimacy->admin_note)
-                    {{ $legitimacy->admin_note }}
-                    @endif
-                </div> --}}
-
-                <!-- Signatories - Left/Right Float Layout -->
+                <!-- Signatories -->
                 @if($signatories && count($signatories) > 0)
                     <div class="signatories-section">
+                        @foreach($signatories as $signatory)
+                            <div class="signatory-box">
+                                @if($signatory->signature_url && file_exists(public_path($signatory->signature_url)))
+                                    <img src="{{ public_path($signatory->signature_url) }}" alt="Signature" class="signature-image">
+                                @else
 
-                        {{-- LEFT --}}
-                        @if(isset($signatories[0]))
-                            <div class="signatory-cell">
-                                <div class="signatory-box">
-                                    @if($signatories[0]->signature_url && file_exists(public_path($signatories[0]->signature_url)))
-                                        <img src="{{ public_path($signatories[0]->signature_url) }}" class="signature-image">
-                                    @endif
-                                    <div class="signature-line"></div>
-                                    <div class="signatory-name">{{ strtoupper($signatories[0]->name) }}</div>
-                                    <div class="signatory-role">{{ $signatories[0]->role }}</div>
-                                </div>
+                                    <div class="signature-placeholder"></div>
+                                @endif
+                                <div class="signature-line"></div>
+                                <div class="signatory-name">{{ strtoupper($signatory->name) }}</div>
+                                @if($signatory->role)
+                                    <div class="signatory-role">{{ $signatory->role }}</div>
+                                @endif
+                                @if($signatory->signed_date)
+                                    <div class="signatory-date">{{ \Carbon\Carbon::parse($signatory->signed_date)->format('F d, Y')
+                                        }}</div>
+                                @endif
                             </div>
-                        @endif
-
-                        {{-- RIGHT --}}
-                        @if(isset($signatories[1]))
-                            <div class="signatory-cell">
-                                <div class="signatory-box">
-                                    @if($signatories[2]->signature_url && file_exists(public_path($signatories[2]->signature_url)))
-                                        <img src="{{ public_path($signatories[2]->signature_url) }}" class="signature-image">
-                                    @endif
-                                    <div class="signature-line"></div>
-                                    <div class="signatory-name">{{ strtoupper($signatories[2]->name) }}</div>
-                                    <div class="signatory-role">{{ $signatories[2]->role }}</div>
-                                </div>
-                            </div>
-                        @endif
-
-                        {{-- BOTTOM CENTER --}}
-                        @if(isset($signatories[2]))
-                            <div class="signatory-cell">
-                                <div class="signatory-box">
-                                    @if($signatories[1]->signature_url && file_exists(public_path($signatories[1]->signature_url)))
-                                        <img src="{{ public_path($signatories[1]->signature_url) }}" class="signature-image">
-                                    @endif
-                                    <div class="signature-line"></div>
-                                    <div class="signatory-name">{{ strtoupper($signatories[1]->name) }}</div>
-                                    <div class="signatory-role">{{ $signatories[1]->role }}</div>
-                                </div>
-                            </div>
-                        @endif
-
+                        @endforeach
                     </div>
                 @endif
-
             </div>
 
             <!-- Footer -->
             <div class="certificate-footer">
-                {{-- <div class="certificate-number"></div> --}}
+                <div class="certificate-number">Certificate No. TGFC-{{ str_pad($legitimacy->id, 6, '0', STR_PAD_LEFT)
+                    }}</div>
                 <div class="footer-line">Issued on {{ $generatedDate }}</div>
                 <div class="footer-line">© {{ date('Y') }} Triskelion Grand Fraternity. All rights reserved.</div>
             </div>

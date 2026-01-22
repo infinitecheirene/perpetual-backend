@@ -571,8 +571,8 @@ class LegitimacyController extends Controller
                 ->setOption('margin-bottom', 15)
                 ->setOption('margin-left', 15)
                 ->setOption('margin-right', 15);
-            $alias = preg_replace('/[^A-Za-z0-9\-]/', '-', strtolower($legitimacy->alias));
-            $filename = 'certificate-' . $alias . '-' . now()->format('Y-m-d') . '.pdf';
+
+            $filename = 'certificate-' . str_replace(' ', '-', strtolower($legitimacy->alias)) . '-' . now()->format('Y-m-d') . '.pdf';
 
             return $pdf->download($filename);
 
