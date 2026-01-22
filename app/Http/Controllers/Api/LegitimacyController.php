@@ -4,106 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\LegitimacyRequest;
-use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class LegitimacyController extends Controller
 {
-    /**
-     * Verify if a user is active using fraternity number
-     */
-    public function verifyActiveUser(Request $request)
-    {
-        // Validate input
-        $validator = Validator::make($request->all(), [
-            'fraternity_number' => 'required|string',
-            'name' => 'required|string',
-            'email' => 'required|email',
-        ], [
-            'fraternity_number.required' => 'Fraternity number is required.',
-            'name.required' => 'Name is required.',
-            'email.required' => 'Email is required.',
-            'email.email' => 'Invalid email format.',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        $fraternityNumber = $request->fraternity_number;
-        $name = $request->name;
-        $email = $request->email;
-
-        // Find user safely
-        $user = User::where('fraternity_number', $fraternityNumber)
-            ->select('id', 'name', 'email', 'fraternity_number')
-            ->first();
-
-        if (! $user) {
-            return response()->json([
-                'success' => true,
-                'active' => false,
-                'message' => 'Fraternity number not found',
-            ], 200);
-        }
-
-        // Check name/email match
-        if ($user->name !== $name || $user->email !== $email) {
-            return response()->json([
-                'success' => true,
-                'active' => false,
-                'message' => 'Name or email does not match the fraternity number',
-                'data' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'fraternity_number' => $user->fraternity_number,
-                ],
-            ], 200);
-        }
-
-        // Check approved legitimacy
-        $legitimacy = LegitimacyRequest::where('user_id', $user->id)
-            ->where('status', 'approved')
-            ->latest('approved_at')
-            ->first();
-
-        if (! $legitimacy) {
-            return response()->json([
-                'success' => true,
-                'active' => false,
-                'message' => 'User is not active. No approved legitimacy found.',
-                'data' => [
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'fraternity_number' => $user->fraternity_number,
-                ],
-            ], 200);
-        }
-
-        // Active user response
-        return response()->json([
-            'success' => true,
-            'active' => true,
-            'data' => [
-                'name' => $user->name,
-                'email' => $user->email,
-                'fraternity_number' => $user->fraternity_number,
-                'alias' => $legitimacy->alias,
-                'position' => $legitimacy->position,
-                'chapter' => $legitimacy->chapter,
-                'approved_at' => $legitimacy->approved_at,
-            ],
-        ], 200);
-    }
-
     /**
      * List legitimacy requests for the authenticated user
      */
@@ -111,7 +19,7 @@ class LegitimacyController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->isMember()) {
+        if (!$user->isMember()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only users can view their own legitimacy requests.',
@@ -143,7 +51,7 @@ class LegitimacyController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->isMember()) {
+        if (!$user->isMember()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only users can submit legitimacy requests.',
@@ -212,7 +120,7 @@ class LegitimacyController extends Controller
     {
         $user = Auth::user();
 
-        if (! $user->isMember()) {
+        if (!$user->isMember()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only users can update legitimacy requests.',
@@ -223,7 +131,7 @@ class LegitimacyController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
-        if (! $legitimacy) {
+        if (!$legitimacy) {
             return response()->json([
                 'success' => false,
                 'message' => 'Legitimacy request not found or unauthorized.',
@@ -261,6 +169,8 @@ class LegitimacyController extends Controller
         ]);
     }
 
+
+
     /**
      * Admin: list all legitimacy requests (with search/filter)
      */
@@ -268,7 +178,7 @@ class LegitimacyController extends Controller
     {
         $admin = Auth::user();
 
-        if (! $admin->isAdmin()) {
+        if (!$admin->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admins can view all legitimacy requests.',
@@ -315,7 +225,7 @@ class LegitimacyController extends Controller
     {
         $admin = Auth::user();
 
-        if (! $admin->isAdmin()) {
+        if (!$admin->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admins can create legitimacy requests.',
@@ -345,7 +255,6 @@ class LegitimacyController extends Controller
 
         if ($validator->fails()) {
             Log::error('Validation failed', ['errors' => $validator->errors()]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -356,7 +265,7 @@ class LegitimacyController extends Controller
         try {
             // Find the user by fraternity number
             $user = \App\Models\User::where('fraternity_number', (int) $request->fraternity_number)->first();
-            if (! $user) {
+            if (!$user) {
                 return response()->json([
                     'success' => false,
                     'message' => 'No user found with that fraternity number.',
@@ -385,7 +294,7 @@ class LegitimacyController extends Controller
                     // Check if signature file exists
                     if ($request->hasFile("signatories.{$index}.signature_file")) {
                         $file = $request->file("signatories.{$index}.signature_file");
-                        $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                        $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                         $file->move(public_path('signatureUrl'), $fileName);
                         $signatureUrl = "/signatureUrl/$fileName";
                     }
@@ -425,7 +334,7 @@ class LegitimacyController extends Controller
     {
         $admin = Auth::user();
 
-        if (! $admin->isAdmin()) {
+        if (!$admin->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admins can update legitimacy requests.',
@@ -433,7 +342,7 @@ class LegitimacyController extends Controller
         }
 
         $legitimacy = LegitimacyRequest::find($id);
-        if (! $legitimacy) {
+        if (!$legitimacy) {
             return response()->json([
                 'success' => false,
                 'message' => 'Legitimacy request not found.',
@@ -466,7 +375,6 @@ class LegitimacyController extends Controller
 
         if ($validator->fails()) {
             Log::error('Validation failed', ['errors' => $validator->errors()]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -523,12 +431,12 @@ class LegitimacyController extends Controller
                 // Check if signature file exists
                 if ($request->hasFile("signatories.{$index}.signature_file")) {
                     $file = $request->file("signatories.{$index}.signature_file");
-                    $fileName = time().'_'.uniqid().'.'.$file->getClientOriginalExtension();
+                    $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                     $file->move(public_path('signatureUrl'), $fileName);
                     $signatureUrl = "/signatureUrl/$fileName";
                 }
 
-                if (! empty($sig['id'])) {
+                if (!empty($sig['id'])) {
                     // Update existing signatory
                     $signatory = $legitimacy->signatories()->find($sig['id']);
                     if ($signatory) {
@@ -572,7 +480,7 @@ class LegitimacyController extends Controller
     {
         $admin = Auth::user();
 
-        if (! $admin->isAdmin()) {
+        if (!$admin->isAdmin()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Only admins can delete legitimacy requests.',
@@ -581,7 +489,7 @@ class LegitimacyController extends Controller
 
         $legitimacy = LegitimacyRequest::find($id);
 
-        if (! $legitimacy) {
+        if (!$legitimacy) {
             return response()->json([
                 'success' => false,
                 'message' => 'Legitimacy request not found.',
@@ -618,6 +526,7 @@ class LegitimacyController extends Controller
         }
     }
 
+
     /**
      * Generate PDF certificate for a specific legitimacy request
      */
@@ -626,7 +535,7 @@ class LegitimacyController extends Controller
         try {
             $admin = Auth::user();
 
-            if (! $admin || ! $admin->isAdmin()) {
+            if (!$admin || !$admin->isAdmin()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Only admins can generate certificates.',
@@ -635,7 +544,7 @@ class LegitimacyController extends Controller
 
             $legitimacy = LegitimacyRequest::with(['user', 'signatories'])->find($id);
 
-            if (! $legitimacy) {
+            if (!$legitimacy) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Legitimacy request not found.',
@@ -651,7 +560,7 @@ class LegitimacyController extends Controller
                 'certificateDate' => $legitimacy->certificate_date
                     ? \Carbon\Carbon::parse($legitimacy->certificate_date)->format('F d, Y')
                     : now()->format('F d, Y'),
-                'statusClass' => 'status-'.$legitimacy->status,
+                'statusClass' => 'status-' . $legitimacy->status,
                 'logoPath' => public_path('images/logo.png'),
                 'logoExists' => file_exists(public_path('images/logo.png')),
             ];
@@ -663,20 +572,21 @@ class LegitimacyController extends Controller
                 ->setOption('margin-left', 15)
                 ->setOption('margin-right', 15);
 
-            $filename = 'certificate-'.str_replace(' ', '-', strtolower($legitimacy->alias)).'-'.now()->format('Y-m-d').'.pdf';
+            $filename = 'certificate-' . str_replace(' ', '-', strtolower($legitimacy->alias)) . '-' . now()->format('Y-m-d') . '.pdf';
 
             return $pdf->download($filename);
+
         } catch (\Exception $e) {
             Log::error('Error generating legitimacy certificate PDF', [
                 'legitimacy_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate certificate',
-                'error' => $e->getMessage(),
+                'error' => $e->getMessage()
             ], 500);
         }
     }
