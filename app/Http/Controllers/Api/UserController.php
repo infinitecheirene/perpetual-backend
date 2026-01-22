@@ -7,27 +7,28 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
         try {
-            $query = User::members()->select([
-                'id',
-                'name',
-                'email',
-                'phone_number',
-                'address',
-                'school_registration_number',
-                'fraternity_number',
-                'status',
-                'role',
-                'rejection_reason',
-                'created_at',
-                'updated_at',
-                'email_verified_at'
-            ]);
+            $query = User::where('role', 'member')
+                ->select([
+                    'id',
+                    'name',
+                    'email',
+                    'phone_number',
+                    'address',
+                    'fraternity_number',
+                    'status',
+                    'role',
+                    'rejection_reason',
+                    'created_at',
+                    'updated_at',
+                    'email_verified_at'
+                ]);
 
             // Filter by status
             if ($request->has('status') && $request->status !== 'all') {
@@ -70,14 +71,13 @@ class UserController extends Controller
     public function show($id)
     {
         try {
-            $user = User::members()
+            $user = User::where('role', 'member')
                 ->select([
                     'id',
                     'name',
                     'email',
                     'phone_number',
                     'address',
-                    'school_registration_number',
                     'fraternity_number',
                     'status',
                     'role',
@@ -130,7 +130,7 @@ class UserController extends Controller
         }
 
         try {
-            $user = User::members()->find($id);
+            $user = User::find($id);
 
             if (!$user) {
                 return response()->json([
@@ -184,11 +184,11 @@ class UserController extends Controller
     {
         try {
             $stats = [
-                'total' => User::members()->count(),
-                'pending' => User::members()->pending()->count(),
-                'approved' => User::members()->approved()->count(),
-                'rejected' => User::members()->where('status', 'rejected')->count(),
-                'deactivated' => User::members()->deactivated()->count(),
+                'total' => User::where('role', 'member')->count(),
+                'pending' => User::where('role', 'member')->where('status', 'pending')->count(),
+                'approved' => User::where('role', 'member')->where('status', 'approved')->count(),
+                'rejected' => User::where('role', 'member')->where('status', 'rejected')->count(),
+                'deactivated' => User::where('role', 'member')->where('status', 'deactivated')->count(),
             ];
 
             return response()->json([
@@ -204,6 +204,77 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch statistics',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function exportPDF(Request $request)
+    {
+        try {
+            $query = User::where('role', 'member')
+                ->select([
+                    'id',
+                    'name',
+                    'email',
+                    'phone_number',
+                    'address',
+                    'fraternity_number',
+                    'status',
+                    'created_at',
+                    'updated_at'
+                ]);
+
+            if ($request->has('status') && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->has('search') && !empty($request->search)) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone_number', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%");
+                });
+            }
+
+            $users = $query->latest()->get();
+
+            $stats = [
+                'total' => $users->count(),
+                'pending' => $users->where('status', 'pending')->count(),
+                'approved' => $users->where('status', 'approved')->count(),
+                'rejected' => $users->where('status', 'rejected')->count(),
+                'deactivated' => $users->where('status', 'deactivated')->count(),
+            ];
+
+            $data = [
+                'users' => $users,
+                'stats' => $stats,
+                'date' => now()->format('F d, Y'),
+                'time' => now()->format('h:i A'),
+                'generatedDateTime' => now()->format('F d, Y g:i A'),
+            ];
+
+            $pdf = Pdf::loadView('pdf.user-report', $data)
+                ->setPaper('a4', 'portrait')
+                ->setOption('margin-top', 15)
+                ->setOption('margin-bottom', 15)
+                ->setOption('margin-left', 15)
+                ->setOption('margin-right', 15);
+
+            return $pdf->download('users-report-' . now()->format('Y-m-d') . '.pdf');
+
+        } catch (\Exception $e) {
+            Log::error('Error generating PDF', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate PDF',
                 'error' => $e->getMessage()
             ], 500);
         }

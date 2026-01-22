@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
@@ -18,7 +17,6 @@ class User extends Authenticatable
         'password',
         'phone_number',
         'address',
-        'school_registration_number',
         'fraternity_number',
         'status',
         'role',
@@ -36,7 +34,6 @@ class User extends Authenticatable
         'email',
         'phone_number',
         'address',
-        'school_registration_number',
         'fraternity_number',
         'status',
         'role',
@@ -59,7 +56,13 @@ class User extends Authenticatable
 
     public function isUser(): bool
     {
-        return $this->role === 'user';
+        return $this->role === 'member';
+    }
+
+    // Add isMember() as an alias for isUser()
+    public function isMember(): bool
+    {
+        return $this->role === 'member';
     }
 
     // Status check methods
@@ -102,15 +105,24 @@ class User extends Authenticatable
     // Query scopes for role
     public function scopeUsers($query)
     {
-        return $query->where('role', 'user');
+        return $query->where('role', 'member');
     }
 
     public function scopeAdmins($query)
     {
         return $query->where('role', 'admin');
     }
-    public function juantapProfile()
+
+    public function members()
     {
-        return $this->hasOne(\App\Models\JuanTapProfile::class);
+        return $this->hasMany(Member::class);
+    }
+
+    /**
+     * Relationship: User has many business partners
+     */
+    public function businessPartners()
+    {
+        return $this->hasMany(BusinessPartner::class);
     }
 }
